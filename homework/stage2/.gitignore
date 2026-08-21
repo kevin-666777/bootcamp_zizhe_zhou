@@ -1,0 +1,7 @@
+# Local secrets
+.env
+
+# Python and Jupyter artifacts
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
