@@ -152,6 +152,14 @@ Data locations come from the uncommitted `.env`: `DATA_DIR_RAW=data/raw` and `DA
 
 `src/storage.py` provides `write_df()` and `read_df()`, which route automatically by `.csv` or `.parquet` suffix, create missing parent directories when writing, reject unsupported formats, report missing files clearly, and explain how to install a missing Parquet engine. `validate_roundtrip()` verifies matching shapes, column order, and critical dtypes after reload. The Stage 05 cells in `notebooks/project_pipeline.ipynb` read the raw CSV with the environment-driven raw directory, write the Parquet copy to the processed directory, reload both formats, and display their validation reports.
 
+## Data Preprocessing
+
+`src/cleaning.py` provides a reusable `clean_daily_ohlcv()` pipeline that standardizes column names, parses dates and numeric values, trims provenance text, sorts observations, retains the last record for duplicate trading dates, and removes rows whose required values are missing or violate basic OHLCV rules. It finishes by applying the ingestion validator, so an invalid cleaned table cannot silently continue downstream. `cleaning_report()` records before/after row counts, missingness, duplicates, and date coverage.
+
+The cleaning policy is intentionally conservative. Missing market prices are dropped rather than median-filled because a fabricated price would create artificial returns and volatility. Ordinary weekends and exchange holidays are not inserted. Feature scaling is deferred until modeling, where it must be fitted on training data only to prevent leakage. Adjusted close is retained alongside unadjusted OHLC values; the future return target will use a consistently documented adjusted-price basis.
+
+The Stage 06 cells in `notebooks/project_pipeline.ipynb` load the stored raw CSV, apply the reusable cleaner, compare the original and cleaned data, validate the result, and save `data/processed/aapl_ohlcv_clean_20200102_20260824.parquet`. The raw CSV remains the source record; all preprocessing output receives a distinct filename and can be recreated from code.
+
 ## Current Stage
 
-**Data Storage complete.** Environment-driven CSV and Parquet IO now preserves a validated raw source snapshot and a type-stable analytical copy. Reusable storage utilities handle directories, suffix routing, missing files, missing Parquet engines, and round-trip validation. The next stage will add modular preprocessing while keeping the raw layer immutable.
+**Data Preprocessing complete.** The pipeline now converts the raw market snapshot into a validated, chronologically ordered cleaned Parquet dataset using reusable, tested functions and a documented missing-data policy. The next stage will examine outliers, assumptions, and sensitivity without rewriting the raw data.
