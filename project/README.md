@@ -166,6 +166,14 @@ The primary outlier definition is the 1.5 × IQR rule applied to adjusted-close 
 
 Extreme returns are retained and flagged rather than deleted because genuine shocks are essential to volatility-risk analysis. The global flag is an audit and EDA annotation—not a leakage-safe model feature—and later time-ordered modeling must estimate any threshold using training history only. The full assumptions, risks, and safeguards are documented in `docs/outliers.md`.
 
+## Exploratory Data Analysis
+
+`src/eda.py` provides `eda_summary()`, which profiles schema, missingness, unique values, descriptive statistics, medians, skewness, kurtosis, categorical frequencies, numeric correlations, and columns needing attention. The pipeline imports this helper and displays its results before creating a reproducible EDA dashboard under `reports/aapl_eda_overview.png`.
+
+The EDA covers daily-return and absolute-return distributions, volume behavior, intraday range versus absolute return, volume versus absolute return, adjusted close over time, 21-day rolling volatility, and a focused correlation matrix. Results show strongly heavy-tailed absolute returns, intraday ranges, and volume. Intraday range has the strongest contemporaneous relationship with absolute return among the simple diagnostics, while rolling volatility provides meaningful time-local structure. These observations motivate leakage-safe lagged return, range, rolling-volatility, and volume features in Stage 09.
+
+EDA findings remain descriptive. Same-day range cannot be used for a forecast made before that day closes, correlations do not imply causality, full-sample statistics can hide regime shifts, and price levels are non-stationary. Time-aware feature alignment and validation remain mandatory.
+
 ## Current Stage
 
-**Outlier Analysis complete.** Daily adjusted-close returns now carry transparent IQR and Z-score flags, while sensitivity tables and a visual compare retained, filtered, and winsorized treatments. Extreme market events remain in the canonical dataset. The next stage will use EDA to examine distributions, temporal structure, and modeling implications.
+**Exploratory Data Analysis complete.** The pipeline now includes reusable numeric and categorical profiling, attention flags, distributions, bivariate relationships, a time-series view, and correlation analysis. The documented findings lead directly to leakage-safe feature hypotheses for Stage 09.
