@@ -113,13 +113,24 @@ def validate_daily_ohlcv(df: pd.DataFrame) -> dict[str, object]:
     }
 
 
-def save_raw_snapshot(df: pd.DataFrame, output_dir: str | Path, symbol: str) -> Path:
-    """Validate and save one deterministic, date-ranged raw CSV snapshot."""
+def save_raw_snapshot(
+    df: pd.DataFrame,
+    output_dir: str | Path,
+    symbol: str,
+    *,
+    overwrite: bool = False,
+) -> Path:
+    """Validate and save one deterministic, date-ranged raw CSV snapshot.
+
+    Existing snapshots are preserved by default so later pipeline stages cannot
+    silently rewrite an earlier raw input when a vendor revises history.
+    """
     report = validate_daily_ohlcv(df)
     directory = Path(output_dir)
     directory.mkdir(parents=True, exist_ok=True)
     safe_symbol = re.sub(r"[^A-Za-z0-9]+", "_", symbol).strip("_").lower()
     filename = f"{safe_symbol}_ohlcv_{report['date_min'].replace('-', '')}_{report['date_max'].replace('-', '')}.csv"
     path = directory / filename
-    df.to_csv(path, index=False, date_format="%Y-%m-%d")
+    if overwrite or not path.exists():
+        df.to_csv(path, index=False, date_format="%Y-%m-%d")
     return path

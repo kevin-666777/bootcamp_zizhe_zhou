@@ -160,6 +160,12 @@ The cleaning policy is intentionally conservative. Missing market prices are dro
 
 The Stage 06 cells in `notebooks/project_pipeline.ipynb` load the stored raw CSV, apply the reusable cleaner, compare the original and cleaned data, validate the result, and save `data/processed/aapl_ohlcv_clean_20200102_20260824.parquet`. The raw CSV remains the source record; all preprocessing output receives a distinct filename and can be recreated from code.
 
+## Outlier Analysis
+
+The primary outlier definition is the 1.5 × IQR rule applied to adjusted-close daily returns. IQR is transparent and does not require normally distributed returns. `src/outliers.py` also includes a Z-score detector, winsorization, dataframe flagging, and a reusable sensitivity summary. The pipeline compares all observations, IQR-filtered observations, and 1st/99th-percentile winsorized observations and saves a boxplot under `reports/`.
+
+Extreme returns are retained and flagged rather than deleted because genuine shocks are essential to volatility-risk analysis. The global flag is an audit and EDA annotation—not a leakage-safe model feature—and later time-ordered modeling must estimate any threshold using training history only. The full assumptions, risks, and safeguards are documented in `docs/outliers.md`.
+
 ## Current Stage
 
-**Data Preprocessing complete.** The pipeline now converts the raw market snapshot into a validated, chronologically ordered cleaned Parquet dataset using reusable, tested functions and a documented missing-data policy. The next stage will examine outliers, assumptions, and sensitivity without rewriting the raw data.
+**Outlier Analysis complete.** Daily adjusted-close returns now carry transparent IQR and Z-score flags, while sensitivity tables and a visual compare retained, filtered, and winsorized treatments. Extreme market events remain in the canonical dataset. The next stage will use EDA to examine distributions, temporal structure, and modeling implications.

@@ -47,6 +47,17 @@ class IngestionTests(unittest.TestCase):
             self.assertEqual(path.name, "aapl_ohlcv_20250102_20250103.csv")
             self.assertTrue(Path(path).is_file())
 
+    def test_snapshot_is_immutable_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            original = sample_ohlcv()
+            path = save_raw_snapshot(original, directory, "AAPL")
+            revised = original.copy()
+            revised.loc[0, "close"] = 244.5
+            save_raw_snapshot(revised, directory, "AAPL")
+
+            reloaded = pd.read_csv(path)
+            self.assertEqual(reloaded.loc[0, "close"], 244.0)
+
 
 if __name__ == "__main__":
     unittest.main()
