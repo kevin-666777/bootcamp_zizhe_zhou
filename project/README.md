@@ -93,11 +93,47 @@ project/
 ├── src/              # Reusable ingestion, cleaning, features, and modeling code
 ├── .env.example      # Safe configuration template
 ├── .gitignore
+├── Makefile           # Shortcuts for setup, checks, and Jupyter
+├── requirements.txt  # Reproducible Python dependencies
 └── README.md
 ```
 
 Changes will be made in small, descriptive commits. Raw data will be preserved, derived data will be reproducible from code, and material changes to target, scope, assumptions, or evaluation will be recorded in this README or `docs/`.
 
+## Tooling Setup
+
+The project targets **Python 3.11** and uses a dedicated Conda environment. From the repository root, recreate the environment and install the dependencies with:
+
+```bash
+conda create -n fe-course python=3.11 -y
+conda activate fe-course
+cd project
+python -m pip install -r requirements.txt
+```
+
+Create the local configuration file from the safe template. The resulting `.env` is excluded by `.gitignore` and must never contain committed credentials.
+
+```bash
+cp .env.example .env
+```
+
+Configuration is loaded through `src/config.py`. `load_env()` reads the project-level `.env`, `get_key()` retrieves a setting with optional required-value validation, and `get_path()` resolves data and artifact directories relative to the project root. A typical notebook setup is:
+
+```python
+from src.config import get_path, load_env
+
+load_env()
+raw_dir = get_path("DATA_DIR_RAW", "data/raw", create=True)
+```
+
+The `Makefile` provides three convenience commands:
+
+- `make install` installs the pinned dependencies.
+- `make check` checks that the source modules compile.
+- `make notebook` starts JupyterLab in the active environment.
+
+The scaffold separates immutable source snapshots in `data/raw/`, reproducible derived datasets in `data/processed/`, exploratory work in `notebooks/`, reusable logic in `src/`, stakeholder documentation in `docs/`, generated outputs in `reports/`, and model artifacts in `model/`. Empty folders contain `.gitkeep` so the full structure remains visible on GitHub.
+
 ## Current Stage
 
-**Problem Framing & Scoping complete.** The next project stage will establish the reproducible environment and configuration inside this persistent `project/` directory.
+**Tooling Setup complete.** The project now has a reproducible dependency specification, environment-driven configuration, a secure secrets template, executable setup shortcuts, and the full lifecycle scaffold. The next stage will acquire and validate historical AAPL market data.
