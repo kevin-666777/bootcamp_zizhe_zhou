@@ -1,0 +1,19 @@
+# Secrets and local environments
+.env
+.venv/
+env/
+
+# Python and Jupyter artifacts
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# OS and editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Generated artifacts
+model/*.joblib
+model/*.pkl
+reports/*.html
