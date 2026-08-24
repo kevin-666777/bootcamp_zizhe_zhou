@@ -91,6 +91,7 @@ project/
 ├── notebooks/        # Numbered analysis notebooks
 ├── reports/          # Figures, tables, and final outputs
 ├── src/              # Reusable ingestion, cleaning, features, and modeling code
+├── tests/             # Automated checks for reusable project code
 ├── .env.example      # Safe configuration template
 ├── .gitignore
 ├── Makefile           # Shortcuts for setup, checks, and Jupyter
@@ -130,10 +131,11 @@ The `Makefile` provides three convenience commands:
 
 - `make install` installs the pinned dependencies.
 - `make check` checks that the source modules compile.
+- `make test` runs the utility test suite.
 - `make notebook` starts JupyterLab in the active environment.
 
 The scaffold separates immutable source snapshots in `data/raw/`, reproducible derived datasets in `data/processed/`, exploratory work in `notebooks/`, reusable logic in `src/`, stakeholder documentation in `docs/`, generated outputs in `reports/`, and model artifacts in `model/`. Empty folders contain `.gitkeep` so the full structure remains visible on GitHub.
 
 ## Current Stage
 
-**Tooling Setup complete.** The project now has a reproducible dependency specification, environment-driven configuration, a secure secrets template, executable setup shortcuts, and the full lifecycle scaffold. The next stage will acquire and validate historical AAPL market data.
+**Python Fundamentals complete.** `notebooks/python_fundamentals_summary.ipynb` demonstrates core Python structures, NumPy vectorization, pandas inspection and aggregation, and deterministic mock market data. Reusable column-name and date-parsing helpers now live in `src/utils.py` with automated tests. The next stage will acquire and validate historical AAPL market data.
