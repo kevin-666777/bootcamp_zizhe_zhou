@@ -136,6 +136,14 @@ The `Makefile` provides three convenience commands:
 
 The scaffold separates immutable source snapshots in `data/raw/`, reproducible derived datasets in `data/processed/`, exploratory work in `notebooks/`, reusable logic in `src/`, stakeholder documentation in `docs/`, generated outputs in `reports/`, and model artifacts in `model/`. Empty folders contain `.gitkeep` so the full structure remains visible on GitHub.
 
+## Data Acquisition
+
+The initial project dataset is daily AAPL OHLCV market data from Yahoo Finance, retrieved through `yfinance`. The local `.env` supplies `MARKET_DATA_TICKER`, `MARKET_DATA_START`, and the exclusive `MARKET_DATA_END`; `.env.example` documents these settings without storing credentials. The fixed initial request covers 2020-01-01 through 2026-08-25 (exclusive end).
+
+`src/ingestion.py` normalizes the vendor schema, parses dates and numeric fields, validates required columns, missing values, date uniqueness and order, positive prices, non-negative volume, and daily high/low relationships. `notebooks/project_pipeline.ipynb` performs the acquisition, displays the audit report, saves the raw CSV under `data/raw/`, reloads it, and validates the round trip. Raw snapshot filenames use their actual observation range—for example, `aapl_ohlcv_20200102_20260824.csv`—so the project input remains identifiable and reproducible.
+
+Yahoo Finance is appropriate for this educational prototype but is not a guaranteed production feed. Its availability, corrections, adjustment policy, and schema may change. The committed raw snapshot preserves the precise input used by this project; later stages will explicitly resolve adjusted versus unadjusted price usage and add exchange-calendar and distribution checks.
+
 ## Current Stage
 
-**Python Fundamentals complete.** `notebooks/python_fundamentals_summary.ipynb` demonstrates core Python structures, NumPy vectorization, pandas inspection and aggregation, and deterministic mock market data. Reusable column-name and date-parsing helpers now live in `src/utils.py` with automated tests. The next stage will acquire and validate historical AAPL market data.
+**Data Acquisition & Ingestion complete.** The project pipeline now retrieves AAPL daily OHLCV data programmatically, validates its schema and market-data rules, saves a reproducible raw snapshot, and verifies the saved file by reloading it. The next stage will establish environment-driven CSV and Parquet storage utilities without modifying the raw source snapshot.
