@@ -144,6 +144,14 @@ The initial project dataset is daily AAPL OHLCV market data from Yahoo Finance, 
 
 Yahoo Finance is appropriate for this educational prototype but is not a guaranteed production feed. Its availability, corrections, adjustment policy, and schema may change. The committed raw snapshot preserves the precise input used by this project; later stages will explicitly resolve adjusted versus unadjusted price usage and add exchange-calendar and distribution checks.
 
+## Data Storage
+
+The project uses a two-layer data layout. `data/raw/` contains immutable source snapshots in CSV format, which is portable, human-readable, and easy to audit. `data/processed/` contains Parquet copies for analysis; Parquet preserves pandas types, loads efficiently, and is more compact. A processed file at this stage is a storage-format copy, not yet a cleaned or feature-engineered dataset.
+
+Data locations come from the uncommitted `.env`: `DATA_DIR_RAW=data/raw` and `DATA_DIR_PROCESSED=data/processed`. `src/config.py` resolves those values relative to the project root, so notebooks and scripts do not require machine-specific absolute paths. `.env.example` provides safe defaults, while `.gitignore` prevents local configuration or secrets from being committed.
+
+`src/storage.py` provides `write_df()` and `read_df()`, which route automatically by `.csv` or `.parquet` suffix, create missing parent directories when writing, reject unsupported formats, report missing files clearly, and explain how to install a missing Parquet engine. `validate_roundtrip()` verifies matching shapes, column order, and critical dtypes after reload. The Stage 05 cells in `notebooks/project_pipeline.ipynb` read the raw CSV with the environment-driven raw directory, write the Parquet copy to the processed directory, reload both formats, and display their validation reports.
+
 ## Current Stage
 
-**Data Acquisition & Ingestion complete.** The project pipeline now retrieves AAPL daily OHLCV data programmatically, validates its schema and market-data rules, saves a reproducible raw snapshot, and verifies the saved file by reloading it. The next stage will establish environment-driven CSV and Parquet storage utilities without modifying the raw source snapshot.
+**Data Storage complete.** Environment-driven CSV and Parquet IO now preserves a validated raw source snapshot and a type-stable analytical copy. Reusable storage utilities handle directories, suffix routing, missing files, missing Parquet engines, and round-trip validation. The next stage will add modular preprocessing while keeping the raw layer immutable.
