@@ -174,6 +174,23 @@ The EDA covers daily-return and absolute-return distributions, volume behavior, 
 
 EDA findings remain descriptive. Same-day range cannot be used for a forecast made before that day closes, correlations do not imply causality, full-sample statistics can hide regime shifts, and price levels are non-stationary. Time-aware feature alignment and validation remain mandatory.
 
+## Feature Engineering
+
+`src/features.py` builds a leakage-aware table for predicting `target_next_day_absolute_return`, defined as the magnitude of the next session's adjusted-close return. Every feature on date *t* is available by that day's close; only the target uses date *t+1*. Rolling windows require full histories, are never backfilled, and the final row is omitted from the modeling table because its future target is unknown.
+
+| Feature | Rationale |
+|---|---|
+| `return_1d`, `return_lag_1d` | Capture the latest signed move and possible short-run continuation or reversal. |
+| `absolute_return_1d` | Represents the latest shock magnitude; Stage 08 showed volatility clustering. |
+| `intraday_range_pct` | Normalizes high-low range by open; EDA found a strong relationship with absolute return. |
+| `rolling_vol_5d`, `rolling_vol_21d` | Represent fast weekly risk and a slower approximately monthly baseline. |
+| `rolling_abs_return_5d` | Provides a robust recent-volatility proxy less dominated by squared extremes. |
+| `volume_change_1d` | Captures sudden changes in attention or liquidity. |
+| `relative_volume_20d` | Compares current volume with its own recent baseline across different market eras. |
+| `weekday_mon` … `weekday_fri` | One-hot categorical encoding tests calendar structure without implying an ordinal weekday scale. |
+
+The pipeline saves the complete model-ready rows to `data/processed/aapl_model_features_20200203_20260821.parquet` and a relationship summary to `reports/aapl_feature_target_relationships.png`. Global outlier flags are intentionally excluded from model features because they use full-sample thresholds. Feature usefulness remains provisional until evaluated with time-ordered validation.
+
 ## Current Stage
 
-**Exploratory Data Analysis complete.** The pipeline now includes reusable numeric and categorical profiling, attention flags, distributions, bivariate relationships, a time-series view, and correlation analysis. The documented findings lead directly to leakage-safe feature hypotheses for Stage 09.
+**Feature Engineering complete.** The pipeline now produces a documented, model-ready next-day volatility table containing returns, normalized range, trailing volatility, volume dynamics, and one-hot calendar features. Tests verify target alignment, chronological ordering, warm-up behavior, and the absence of future influence on past features. The next stage can establish a time-aware baseline and compare predictive models.
