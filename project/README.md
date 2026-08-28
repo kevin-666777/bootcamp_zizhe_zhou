@@ -219,6 +219,19 @@ The preferred 20-session moving-block interval acknowledges short-run error depe
 
 The model therefore passes the provisional average-MAE criterion but fails the requirement that improvement not come with materially worse high-volatility performance. It may support an analyst's routine average-risk review, but the baseline and human escalation must remain visible for shock risk; no forecast may automatically change exposure or trigger a hedge. Production monitoring would need data freshness/schema checks, feature drift, rolling paired MAE/RMSE, block-bootstrap intervals, tail MAE and underprediction, model-versus-baseline wins, residual clusters, and alert frequency. Full assumptions, interval limitations, decision thresholds, and monitoring triggers are documented in `docs/model_evaluation.md` and the updated stakeholder memo.
 
+## Stage 12 Stakeholder Delivery
+
+The final stakeholder-ready written report is `reports/aapl_volatility_stakeholder_report.pdf`, accompanied by the accessible Markdown source `reports/aapl_volatility_stakeholder_report.md`. Its audience is the Portfolio Risk Lead, and its decision is explicit: the model is advisory only and is not approved for automated risk action. The seven-page PDF contains an executive summary, business question and leakage-safe method, walk-forward results, uncertainty and alternate volatility scenarios, decision implications, assumptions and risks, monitoring controls, and a reproducibility appendix.
+
+`src/delivery.py` rebuilds the PDF directly from committed Stage 10b/11 CSV and PNG artifacts using ReportLab. The persistent pipeline calls this helper and verifies the PDF signature, while delivery tests confirm required inputs and a nontrivial generated document. The PDF was rendered page by page during Stage 12 QA to confirm clear labels, readable charts, consistent formatting, complete page numbering, and no clipping or overlap. Recreate it after running the analytical pipeline with:
+
+```python
+from pathlib import Path
+from src.delivery import build_stakeholder_report
+
+build_stakeholder_report(Path.cwd())
+```
+
 ## Current Stage
 
-**Stage 11 Evaluation and Risk Communication complete.** Point metrics now travel with paired uncertainty intervals, scenario sensitivity, calendar-year diagnostics, explicit acceptance criteria, stakeholder language, and production-monitoring requirements. Tests cover reproducible IID and moving-block bootstrap logic, interval validation, mask alignment, and subgroup summaries. The next stage should package these approved limitations and decision boundaries into the final reporting or product interface.
+**Stage 12 Stakeholder Delivery complete.** The project now includes a polished PDF decision brief, an editable Markdown source, reproducible report-generation code, delivery tests, and an executed notebook build step. The delivery preserves alternate-scenario sensitivity, assumptions, risks, next-step implications, and the advisory-only boundary established by evaluation. A later productization stage may automate scheduled generation and monitoring, but it must not weaken the documented human-review requirement.
