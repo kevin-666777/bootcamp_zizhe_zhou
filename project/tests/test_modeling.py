@@ -9,6 +9,7 @@ from src.modeling import (
     REGRESSION_FEATURE_COLUMNS,
     chronological_train_test_split,
     evaluate_holdout,
+    expanding_window_backtest,
     regression_candidates,
     select_regression_model,
     standardized_coefficients,
@@ -83,6 +84,41 @@ class ModelingTests(unittest.TestCase):
         )
         coefficients = standardized_coefficients(model, split.feature_columns)
         self.assertEqual(set(coefficients["feature"]), set(split.feature_columns))
+
+    def test_expanding_backtest_evaluates_each_future_row_once(self) -> None:
+        data = sample_modeling_data(95)
+        folds, predictions = expanding_window_backtest(
+            data,
+            feature_columns=["signal", "rolling_vol_21d"],
+            target_column="target",
+            initial_train_size=50,
+            test_size=20,
+        )
+        self.assertEqual(folds["test_rows"].tolist(), [20, 20, 5])
+        self.assertEqual(len(predictions), 45)
+        self.assertFalse(predictions["date"].duplicated().any())
+        self.assertEqual(predictions["date"].tolist(), data["date"].iloc[50:].tolist())
+
+    def test_expanding_backtest_never_trains_on_test_dates(self) -> None:
+        folds, _ = expanding_window_backtest(
+            sample_modeling_data(80),
+            feature_columns=["signal", "rolling_vol_21d"],
+            target_column="target",
+            initial_train_size=50,
+            test_size=15,
+        )
+        self.assertTrue((folds["train_end"] < folds["test_start"]).all())
+        self.assertEqual(folds["train_rows"].tolist(), [50, 65])
+
+    def test_expanding_backtest_rejects_unsorted_dates(self) -> None:
+        data = sample_modeling_data(80).iloc[::-1].reset_index(drop=True)
+        with self.assertRaisesRegex(ValueError, "sorted"):
+            expanding_window_backtest(
+                data,
+                feature_columns=["signal", "rolling_vol_21d"],
+                target_column="target",
+                initial_train_size=50,
+            )
 
 
 if __name__ == "__main__":

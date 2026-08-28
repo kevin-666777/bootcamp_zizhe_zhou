@@ -174,3 +174,108 @@ def standardized_coefficients(model: Pipeline, feature_columns: Sequence[str]) -
         .sort_values("absolute_coefficient", ascending=False)
         .reset_index(drop=True)
     )
+
+
+def expanding_window_backtest(
+    data: pd.DataFrame,
+    *,
+    feature_columns: Sequence[str] = REGRESSION_FEATURE_COLUMNS,
+    target_column: str = TARGET_COLUMN,
+    initial_train_size: int = 600,
+    test_size: int = 200,
+    candidates: dict[str, Pipeline] | None = None,
+    baseline_column: str = "rolling_vol_21d",
+    tail_quantile: float = 0.8,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Run non-overlapping expanding-window folds with per-fold model selection.
+
+    Candidate selection, scaling, fitting, and the tail threshold are recomputed
+    using only observations earlier than each test window. The final fold may be
+    shorter than ``test_size`` so every observation after the initial window is
+    evaluated exactly once.
+    """
+    if initial_train_size < 10:
+        raise ValueError("initial_train_size must be at least 10 observations.")
+    if test_size < 1:
+        raise ValueError("test_size must be positive.")
+    if not 0 < tail_quantile < 1:
+        raise ValueError("tail_quantile must be between 0 and 1.")
+    required = ["date", *feature_columns, target_column]
+    if baseline_column not in required:
+        required.append(baseline_column)
+    missing = [column for column in required if column not in data.columns]
+    if missing:
+        raise ValueError(f"Backtest columns are missing: {missing}")
+    frame = data[required].copy()
+    frame["date"] = pd.to_datetime(frame["date"], errors="raise")
+    if frame["date"].duplicated().any() or not frame["date"].is_monotonic_increasing:
+        raise ValueError("Backtest dates must be unique and sorted ascending.")
+    if frame.drop(columns="date").isna().any().any():
+        raise ValueError("Backtest features, target, and baseline must not contain missing values.")
+    if initial_train_size >= len(frame):
+        raise ValueError("initial_train_size must leave at least one test observation.")
+
+    fold_rows: list[dict[str, object]] = []
+    prediction_frames: list[pd.DataFrame] = []
+    candidate_models = candidates or regression_candidates()
+    for fold, test_start in enumerate(range(initial_train_size, len(frame), test_size), start=1):
+        test_end = min(test_start + test_size, len(frame))
+        train = frame.iloc[:test_start].copy()
+        test = frame.iloc[test_start:test_end].copy()
+        selected_name, fitted_model, _ = select_regression_model(
+            train,
+            feature_columns=feature_columns,
+            target_column=target_column,
+            candidates=candidate_models,
+        )
+        prediction = np.clip(fitted_model.predict(test[list(feature_columns)]), 0, None)
+        actual = test[target_column].to_numpy()
+        baseline = test[baseline_column].to_numpy()
+        tail_threshold = float(train[target_column].quantile(tail_quantile))
+        tail_mask = actual >= tail_threshold
+        model_metrics = regression_metrics(actual, prediction)
+        baseline_metrics = regression_metrics(actual, baseline)
+        fold_rows.append(
+            {
+                "fold": fold,
+                "selected_model": selected_name,
+                "train_start": train["date"].iloc[0],
+                "train_end": train["date"].iloc[-1],
+                "test_start": test["date"].iloc[0],
+                "test_end": test["date"].iloc[-1],
+                "train_rows": len(train),
+                "test_rows": len(test),
+                "model_mae": model_metrics["mae"],
+                "model_rmse": model_metrics["rmse"],
+                "model_r2": model_metrics["r2"],
+                "baseline_mae": baseline_metrics["mae"],
+                "baseline_rmse": baseline_metrics["rmse"],
+                "baseline_r2": baseline_metrics["r2"],
+                "model_tail_mae": float(mean_absolute_error(actual[tail_mask], prediction[tail_mask]))
+                if tail_mask.any()
+                else np.nan,
+                "baseline_tail_mae": float(mean_absolute_error(actual[tail_mask], baseline[tail_mask]))
+                if tail_mask.any()
+                else np.nan,
+                "tail_threshold": tail_threshold,
+                "tail_observations": int(tail_mask.sum()),
+            }
+        )
+        prediction_frames.append(
+            pd.DataFrame(
+                {
+                    "fold": fold,
+                    "selected_model": selected_name,
+                    "date": test["date"].to_numpy(),
+                    "actual": actual,
+                    "prediction": prediction,
+                    "baseline": baseline,
+                    "residual": actual - prediction,
+                    "absolute_error": np.abs(actual - prediction),
+                    "baseline_absolute_error": np.abs(actual - baseline),
+                    "tail_threshold": tail_threshold,
+                    "is_tail": tail_mask,
+                }
+            )
+        )
+    return pd.DataFrame(fold_rows), pd.concat(prediction_frames, ignore_index=True)
