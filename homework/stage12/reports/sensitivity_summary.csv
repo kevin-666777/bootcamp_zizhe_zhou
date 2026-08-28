@@ -1,0 +1,4 @@
+assumption_or_scenario,change_from_baseline,decision_implication
+Huber robust loss,MAE -5.4%; RMSE 1.2%,Better typical day; no tail-risk cure
+Elevated volatility,Ridge MAE 30.5%,Escalate human review
+5-day dependence,CI width 21.1% vs IID,Use wider block interval
